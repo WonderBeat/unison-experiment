@@ -81,6 +81,19 @@ test> isFullyOverlap.test.second = check(assertEquals (isFullyOverlap ((1, 2), (
 test> isFullyOverlap.test.noOverlap = check(assertEquals (isFullyOverlap ((1, 2), (3,4))) false)
 test> isFullyOverlap.test.same = check(assertEquals (isFullyOverlap ((1, 2), (1,2))) true)
 
+isOverlap: ((Nat, Nat), (Nat, Nat)) -> Boolean
+isOverlap input = 
+    ((fl, fr), (sl, sr)) = input
+    ((fl >= sl) && (fl <= sr)) || ((fr >= sl) && (fr <= sr)) || ((sl >= fl) && (sl <= fr)) || ((sr >= fl) && (sr <= fr))
+
+test> isOverlap.test.right = check(assertEquals (isOverlap ((1, 4), (2, 6))) true)
+test> isOverlap.test.left = check(assertEquals (isOverlap ((3, 8), (2, 6))) true)
+test> isOverlap.test.noOverlap = check(assertEquals (isOverlap ((1, 2), (3, 6))) false)
+test> isOverlap.test.same = check(assertEquals (isOverlap ((1, 2), (1, 2))) true)
+test> isOverlap.test.boundary = check(assertEquals (isOverlap ((1, 2), (2, 3))) true)
+test> isOverlap.test.taskExample1 = check(assertEquals (isOverlap ((6, 6), (4, 6))) true)
+test> isOverlap.test.taskExample2 = check(assertEquals (isOverlap ((2, 8), (3, 7))) true)
+
 program: Text -> {Exception} Nat
 program text =
     failIfCantDecode: Text -> b -> Optional a -> {Exception} a
@@ -91,9 +104,20 @@ program text =
     ranges = List.map (x -> (extractRanges >> (failIfCantDecode "Range error" x)) x) lines
     List.count isFullyOverlap ranges
 
-test> program.test.input = check(assertEquals (catch '(program "1-2,1-2\n1-3,4-5")) (Right 1))
+test> program.test.input = check(assertEquals (catch '(program "1-2,1-2\n1-3,4-5")) (Right 1))    
+
+program2: Text -> {Exception} Nat
+program2 text =
+    failIfCantDecode: Text -> b -> Optional a -> {Exception} a
+    failIfCantDecode text b x = match x with 
+        Some(a) -> a 
+        None -> Exception.raise (Failure (typeLink RuntimeFailure) text (Any b))
+    lines = splitLines text
+    ranges = List.map (x -> (extractRanges >> (failIfCantDecode "Range error" x)) x) lines
+    List.count isOverlap ranges    
 
 task3 : '{IO, Exception} ()
 task3 = 
     strings = '(readFile "task4.txt")    
     '(printLine(Nat.toText (program !strings)))
+    '(printLine(Nat.toText (program2 !strings)))
